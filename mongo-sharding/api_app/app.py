@@ -108,11 +108,14 @@ async def root():
     replicaset_name = topology_description.replica_set_name
 
     shards = None
+    replicas_by_shard = {}
     if topology_type == "Sharded":
         shards_list = await client.admin.command("listShards")
         shards = {}
         for shard in shards_list.get("shards", {}):
             shards[shard["_id"]] = shard["host"]
+            replica_hosts = shard["host"].split("/", 1)[-1].split(",")
+            replicas_by_shard[shard["_id"]] = len(replica_hosts)
 
     cache_enabled = False
     if REDIS_URL:
@@ -130,6 +133,7 @@ async def root():
         "mongo_is_mongos": client.is_mongos,
         "collections": collections,
         "shards": shards,
+        "replicas_by_shard": replicas_by_shard,
         "cache_enabled": cache_enabled,
         "status": "OK",
     }

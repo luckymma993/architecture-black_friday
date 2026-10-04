@@ -25,7 +25,7 @@ init_replica() {
 
 wait_for_primary() {
   local service="$1"
-  until "$DOCKER_BIN" compose exec -T "$service" mongosh --quiet --eval 'try { rs.status().myState === 1 } catch (e) { false }' 2>/dev/null | grep -q true; do
+  until "$DOCKER_BIN" compose exec -T "$service" mongosh --quiet --eval 'try { rs.status().members.some(member => member.stateStr === "PRIMARY") } catch (e) { false }' 2>/dev/null | grep -q true; do
     echo "Ожидаю PRIMARY: $service"
     sleep 2
   done
