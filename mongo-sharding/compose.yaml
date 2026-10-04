@@ -1,0 +1,42 @@
+name: mongo-sharding
+
+services:
+  configSrv1:
+    image: mongo:7.0
+    command: ["mongod", "--configsvr", "--replSet", "configRS", "--bind_ip_all", "--port", "27017"]
+    volumes: [configSrv1_data:/data/configdb]
+  configSrv2:
+    image: mongo:7.0
+    command: ["mongod", "--configsvr", "--replSet", "configRS", "--bind_ip_all", "--port", "27017"]
+    volumes: [configSrv2_data:/data/configdb]
+  configSrv3:
+    image: mongo:7.0
+    command: ["mongod", "--configsvr", "--replSet", "configRS", "--bind_ip_all", "--port", "27017"]
+    volumes: [configSrv3_data:/data/configdb]
+  shard1:
+    image: mongo:7.0
+    command: ["mongod", "--shardsvr", "--replSet", "shard1RS", "--bind_ip_all", "--port", "27017"]
+    volumes: [shard1_data:/data/db]
+  shard2:
+    image: mongo:7.0
+    command: ["mongod", "--shardsvr", "--replSet", "shard2RS", "--bind_ip_all", "--port", "27017"]
+    volumes: [shard2_data:/data/db]
+  mongos:
+    image: mongo:7.0
+    command: ["mongos", "--configdb", "configRS/configSrv1:27017,configSrv2:27017,configSrv3:27017", "--bind_ip_all", "--port", "27017"]
+    depends_on: [configSrv1, configSrv2, configSrv3, shard1, shard2]
+  pymongo_api:
+    image: kazhem/pymongo_api:1.0.0
+    build: ./api_app
+    depends_on: [mongos]
+    ports: ["8080:8080"]
+    environment:
+      MONGODB_URL: mongodb://mongos:27017
+      MONGODB_DATABASE_NAME: somedb
+
+volumes:
+  configSrv1_data:
+  configSrv2_data:
+  configSrv3_data:
+  shard1_data:
+  shard2_data:

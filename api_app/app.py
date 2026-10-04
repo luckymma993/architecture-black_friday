@@ -84,8 +84,17 @@ async def root():
     collections = {}
     for collection_name in collection_names:
         collection = db.get_collection(collection_name)
+        per_shard_count = {}
+        if client.topology_description.topology_type_name == "Sharded":
+            stats = await collection.aggregate([{"$collStats": {"count": {}}}]).to_list(length=None)
+            per_shard_count = {
+                stat["shard"]: stat.get("count", 0)
+                for stat in stats
+                if "shard" in stat
+            }
         collections[collection_name] = {
-            "documents_count": await collection.count_documents({})
+            "documents_count": await collection.count_documents({}),
+            "documents_by_shard": per_shard_count,
         }
     try:
         replica_status = await client.admin.command("replSetGetStatus")

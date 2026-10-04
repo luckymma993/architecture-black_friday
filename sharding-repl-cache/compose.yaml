@@ -1,0 +1,77 @@
+name: sharding-repl-cache
+
+services:
+  configSrv1:
+    image: mongo:7.0
+    command: ["mongod", "--configsvr", "--replSet", "configRS", "--bind_ip_all", "--port", "27017"]
+    volumes: [configSrv1_data:/data/configdb]
+  configSrv2:
+    image: mongo:7.0
+    command: ["mongod", "--configsvr", "--replSet", "configRS", "--bind_ip_all", "--port", "27017"]
+    volumes: [configSrv2_data:/data/configdb]
+  configSrv3:
+    image: mongo:7.0
+    command: ["mongod", "--configsvr", "--replSet", "configRS", "--bind_ip_all", "--port", "27017"]
+    volumes: [configSrv3_data:/data/configdb]
+  shard1-1:
+    image: mongo:7.0
+    command: ["mongod", "--shardsvr", "--replSet", "shard1RS", "--bind_ip_all", "--port", "27017"]
+    volumes: [shard1_1_data:/data/db]
+  shard1-2:
+    image: mongo:7.0
+    command: ["mongod", "--shardsvr", "--replSet", "shard1RS", "--bind_ip_all", "--port", "27017"]
+    volumes: [shard1_2_data:/data/db]
+  shard1-3:
+    image: mongo:7.0
+    command: ["mongod", "--shardsvr", "--replSet", "shard1RS", "--bind_ip_all", "--port", "27017"]
+    volumes: [shard1_3_data:/data/db]
+  shard2-1:
+    image: mongo:7.0
+    command: ["mongod", "--shardsvr", "--replSet", "shard2RS", "--bind_ip_all", "--port", "27017"]
+    volumes: [shard2_1_data:/data/db]
+  shard2-2:
+    image: mongo:7.0
+    command: ["mongod", "--shardsvr", "--replSet", "shard2RS", "--bind_ip_all", "--port", "27017"]
+    volumes: [shard2_2_data:/data/db]
+  shard2-3:
+    image: mongo:7.0
+    command: ["mongod", "--shardsvr", "--replSet", "shard2RS", "--bind_ip_all", "--port", "27017"]
+    volumes: [shard2_3_data:/data/db]
+  mongos:
+    image: mongo:7.0
+    command: ["mongos", "--configdb", "configRS/configSrv1:27017,configSrv2:27017,configSrv3:27017", "--bind_ip_all", "--port", "27017"]
+    depends_on: [configSrv1, configSrv2, configSrv3, shard1-1, shard1-2, shard1-3, shard2-1, shard2-2, shard2-3]
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes: [redis_data:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  pymongo_api:
+    image: kazhem/pymongo_api:1.0.0
+    build: ./api_app
+    depends_on:
+      mongos:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    ports: ["8080:8080"]
+    environment:
+      MONGODB_URL: mongodb://mongos:27017
+      MONGODB_DATABASE_NAME: somedb
+      REDIS_URL: redis://redis:6379
+
+volumes:
+  configSrv1_data:
+  configSrv2_data:
+  configSrv3_data:
+  shard1_1_data:
+  shard1_2_data:
+  shard1_3_data:
+  shard2_1_data:
+  shard2_2_data:
+  shard2_3_data:
+  redis_data:
