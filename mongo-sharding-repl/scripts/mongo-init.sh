@@ -7,7 +7,7 @@ rs.initiate({
   configsvr: true,
   members: [{ _id: 0, host: "configSrv:27019" }]
 })
-while (!db.hello().isWritablePrimary) { sleep(500) }
+while (!db.hello().primary) { sleep(500) }
 EOF
 
 docker compose exec -T shard1-1 mongosh --port 27018 --quiet <<EOF
@@ -19,7 +19,7 @@ rs.initiate({
     { _id: 2, host: "shard1-3:27018" }
   ]
 })
-while (!db.hello().isWritablePrimary) { sleep(500) }
+while (!db.hello().primary) { sleep(500) }
 EOF
 
 docker compose exec -T shard2-1 mongosh --port 27018 --quiet <<EOF
@@ -31,7 +31,7 @@ rs.initiate({
     { _id: 2, host: "shard2-3:27018" }
   ]
 })
-while (!db.hello().isWritablePrimary) { sleep(500) }
+while (!db.hello().primary) { sleep(500) }
 EOF
 
 docker compose exec -T mongos_router mongosh --port 27017 --quiet <<EOF
