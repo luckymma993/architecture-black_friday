@@ -1,0 +1,101 @@
+name: mongo-sharding-repl
+
+x-shard-node: &shard-node
+  image: mongo:8.0
+  healthcheck:
+    test: mongosh --port 27018 --quiet --eval "db.adminCommand('ping')"
+    interval: 5s
+    timeout: 5s
+    retries: 10
+
+services:
+  configSrv:
+    image: mongo:8.0
+    command: mongod --configsvr --replSet config_server --bind_ip_all --port 27019
+    volumes:
+      - config-data:/data/db
+    healthcheck:
+      test: mongosh --port 27019 --quiet --eval "db.adminCommand('ping')"
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  shard1-1:
+    <<: *shard-node
+    command: mongod --shardsvr --replSet shard1 --bind_ip_all --port 27018 --wiredTigerCacheSizeGB 0.25
+    volumes:
+      - shard1-1-data:/data/db
+
+  shard1-2:
+    <<: *shard-node
+    command: mongod --shardsvr --replSet shard1 --bind_ip_all --port 27018 --wiredTigerCacheSizeGB 0.25
+    volumes:
+      - shard1-2-data:/data/db
+
+  shard1-3:
+    <<: *shard-node
+    command: mongod --shardsvr --replSet shard1 --bind_ip_all --port 27018 --wiredTigerCacheSizeGB 0.25
+    volumes:
+      - shard1-3-data:/data/db
+
+  shard2-1:
+    <<: *shard-node
+    command: mongod --shardsvr --replSet shard2 --bind_ip_all --port 27018 --wiredTigerCacheSizeGB 0.25
+    volumes:
+      - shard2-1-data:/data/db
+
+  shard2-2:
+    <<: *shard-node
+    command: mongod --shardsvr --replSet shard2 --bind_ip_all --port 27018 --wiredTigerCacheSizeGB 0.25
+    volumes:
+      - shard2-2-data:/data/db
+
+  shard2-3:
+    <<: *shard-node
+    command: mongod --shardsvr --replSet shard2 --bind_ip_all --port 27018 --wiredTigerCacheSizeGB 0.25
+    volumes:
+      - shard2-3-data:/data/db
+
+  mongos_router:
+    image: mongo:8.0
+    command: mongos --configdb config_server/configSrv:27019 --bind_ip_all --port 27017
+    depends_on:
+      configSrv:
+        condition: service_healthy
+      shard1-1:
+        condition: service_healthy
+      shard1-2:
+        condition: service_healthy
+      shard1-3:
+        condition: service_healthy
+      shard2-1:
+        condition: service_healthy
+      shard2-2:
+        condition: service_healthy
+      shard2-3:
+        condition: service_healthy
+    healthcheck:
+      test: mongosh --port 27017 --quiet --eval "db.adminCommand('ping')"
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  pymongo_api:
+    image: kazhem/pymongo_api:1.0.0
+    depends_on:
+      mongos_router:
+        condition: service_started
+    ports:
+      - 8080:8080
+    environment:
+      MONGODB_URL: "mongodb://mongos_router:27017"
+      MONGODB_DATABASE_NAME: "somedb"
+
+volumes:
+  config-data:
+  shard1-1-data:
+  shard1-2-data:
+  shard1-3-data:
+  shard2-1-data:
+  shard2-2-data:
+  shard2-3-data:
