@@ -1,7 +1,7 @@
 name: sharding-repl-cache
 
 x-shard-node: &shard-node
-  image: mongo:8.0
+  image: mongo:7.0
   healthcheck:
     test: mongosh --port 27018 --quiet --eval "db.adminCommand('ping')"
     interval: 5s
@@ -10,7 +10,7 @@ x-shard-node: &shard-node
 
 services:
   configSrv:
-    image: mongo:8.0
+    image: mongo:7.0
     command: mongod --configsvr --replSet config_server --bind_ip_all --port 27019
     volumes:
       - config-data:/data/db
@@ -57,7 +57,7 @@ services:
       - shard2-3-data:/data/db
 
   mongos_router:
-    image: mongo:8.0
+    image: mongo:7.0
     command: mongos --configdb config_server/configSrv:27019 --bind_ip_all --port 27017
     depends_on:
       configSrv:

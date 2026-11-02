@@ -15,6 +15,8 @@
 
 Требования: Docker с Docker Compose, минимум 2 CPU и 4 ГБ ОЗУ.
 
+Во всех заданиях используется образ `mongo:7.0`: MongoDB 8.x не запускается на ядрах Linux 6.19–7.0.13 ([SERVER-125742](https://jira.mongodb.org/browse/SERVER-125742)), а ветка 7.0 работает на любых версиях ядра.
+
 ```shell
 cd sharding-repl-cache
 docker compose up -d
